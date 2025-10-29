@@ -2,7 +2,7 @@ import sys
 import os
 import shutil
 import subprocess
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtWidgets, QtCore, QtGui
 from front import FileSelectionWindow
 import file_worker as fw
 
@@ -21,6 +21,19 @@ class MainWindow(FileSelectionWindow):
         
         self.connect_signals()
         self.clear_generated_file_list()
+    
+    def animateButton(self, button, animation):
+        """Анимирует нажатие кнопки"""
+        original_geometry = button.geometry()
+        animation.setStartValue(original_geometry)
+        animation.setEndValue(QtCore.QRect(
+            original_geometry.x() - 2,
+            original_geometry.y() - 2,
+            original_geometry.width() + 4,
+            original_geometry.height() + 4
+        ))
+        animation.setDirection(QtCore.QPropertyAnimation.Forward)
+        animation.start()
     
     def clean_tables_directory(self):
         """Очищает папку Tables при запуске"""
@@ -55,7 +68,7 @@ class MainWindow(FileSelectionWindow):
         generated_file_path = os.path.join(self.tables_dir, self.generated_filename)
         
         if os.path.exists(generated_file_path):
-            item = QtWidgets.QListWidgetItem(self.generated_filename)
+            item = QtWidgets.QListWidgetItem(f"📊 {self.generated_filename}")
             item.setData(QtCore.Qt.UserRole, generated_file_path)
             item.setTextAlignment(QtCore.Qt.AlignCenter)
             self.generated_file_list.addItem(item)
@@ -90,8 +103,27 @@ class MainWindow(FileSelectionWindow):
         file_ext = os.path.splitext(file_path)[1].lower()
         return file_ext in excel_extensions
     
+    def animate_file_selection(self, file_number):
+        """Анимирует выбор файла"""
+        if file_number == 1:
+            self.animateButton(self.select_file1_btn, self.file1_animation)
+        else:
+            self.animateButton(self.select_file2_btn, self.file2_animation)
+    
+    def animate_generate(self):
+        """Анимирует кнопку генерации"""
+        self.animateButton(self.generate_file_btn, self.generate_animation)
+    
     def select_file(self, file_number):
         """Выбор отдельного файла (1 или 2)"""
+        # Анимируем кнопку
+        self.animate_file_selection(file_number)
+        
+        # Даем анимации завершиться
+        QtCore.QTimer.singleShot(200, lambda: self._process_file_selection(file_number))
+    
+    def _process_file_selection(self, file_number):
+        """Обрабатывает выбор файла после анимации"""
         file_path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self,
             f'Выберите файл {file_number}',
@@ -113,11 +145,11 @@ class MainWindow(FileSelectionWindow):
             # Сохраняем путь к файлу
             if file_number == 1:
                 self.file1_path = file_path
-                self.file1_label.setText(f'Файл 1:\n{os.path.basename(file_path)}')
+                self.file1_label.setText(f'✅ Файл 1:\n{os.path.basename(file_path)}')
                 self.copy_file_to_tables(file_path, 'file1.xlsx')
             else:
                 self.file2_path = file_path
-                self.file2_label.setText(f'Файл 2:\n{os.path.basename(file_path)}')
+                self.file2_label.setText(f'✅ Файл 2:\n{os.path.basename(file_path)}')
                 self.copy_file_to_tables(file_path, 'file2.xlsx')
             
             # Показываем сообщение об успешной загрузке
@@ -174,6 +206,15 @@ class MainWindow(FileSelectionWindow):
         return True
     
     def generate_file(self):
+        """Запускает функцию создания файла и показывает его в списке"""
+        # Анимируем кнопку генерации
+        self.animate_generate()
+        
+        # Даем анимации завершиться
+        QtCore.QTimer.singleShot(200, self._process_generation)
+    
+    def _process_generation(self):
+        """Обрабатывает генерацию файла после анимации"""
         try:
             # Проверяем готовность файлов
             if not self.check_files_ready():
@@ -186,11 +227,23 @@ class MainWindow(FileSelectionWindow):
             progress_dialog.setCancelButton(None)
             progress_dialog.setRange(0, 0)
             progress_dialog.setModal(True)
+            progress_dialog.setStyleSheet("""
+                QProgressDialog {
+                    background: white;
+                    border: 2px solid #6a11cb;
+                    border-radius: 10px;
+                }
+                QLabel {
+                    color: #333333;
+                    font-size: 14px;
+                }
+            """)
             progress_dialog.show()
             
             QtWidgets.QApplication.processEvents()
             
             # Запускаем генерацию файла
+            self.ensure_tables_directory()
             success = fw.create_file(self)
             
             # Закрываем диалог прогресса
@@ -200,24 +253,67 @@ class MainWindow(FileSelectionWindow):
                 # Показываем сгенерированный файл в списке
                 self.show_generated_file()
                 
-                # Показываем сообщение об успехе
-                QtWidgets.QMessageBox.information(
-                    self,
-                    'Файл создан',
+                # Показываем красивый диалог успеха
+                success_dialog = QtWidgets.QMessageBox(self)
+                success_dialog.setWindowTitle('✅ Файл создан')
+                success_dialog.setText(
                     f'Файл "{self.generated_filename}" успешно создан!\n\n'
                     'Кликните на него в списке чтобы открыть.'
                 )
+                success_dialog.setStyleSheet("""
+                    QMessageBox {
+                        background: white;
+                        border: 2px solid #6a11cb;
+                        border-radius: 15px;
+                    }
+                    QLabel {
+                        color: #333333;
+                        font-size: 14px;
+                    }
+                    QPushButton {
+                        background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                  stop: 0 #6a11cb, stop: 1 #2575fc);
+                        color: white;
+                        border: none;
+                        border-radius: 10px;
+                        padding: 8px 15px;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                """)
+                success_dialog.exec_()
             
         except Exception as e:
-            QtWidgets.QMessageBox.critical(
-                self,
-                'Ошибка',
-                f'Не удалось создать файл: {str(e)}'
-            )
+            error_dialog = QtWidgets.QMessageBox(self)
+            error_dialog.setIcon(QtWidgets.QMessageBox.Critical)
+            error_dialog.setWindowTitle('❌ Ошибка')
+            error_dialog.setText(f'Не удалось создать файл: {str(e)}')
+            error_dialog.setStyleSheet("""
+                QMessageBox {
+                    background: white;
+                    border: 2px solid #ff4444;
+                    border-radius: 15px;
+                }
+                QLabel {
+                    color: #333333;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                              stop: 0 #ff4444, stop: 1 #cc0000);
+                    color: white;
+                    border: none;
+                    border-radius: 10px;
+                    padding: 8px 15px;
+                    font-size: 12px;
+                    font-weight: bold;
+                }
+            """)
+            error_dialog.exec_()
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    app.setApplicationName('Сравнение оценок')
+    app.setApplicationName('S.S.S.')
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
