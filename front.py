@@ -7,34 +7,53 @@ class FileSelectionWindow(QtWidgets.QWidget):
     
     def initUI(self):
         # Создаем вертикальный layout
-        layout = QtWidgets.QVBoxLayout()
+        main_layout = QtWidgets.QVBoxLayout()
         
-        # Создаем кнопку для выбора файлов
-        self.select_files_btn = QtWidgets.QPushButton('Выбрать файлы')
-        self.select_files_btn.setFixedSize(150, 40)
+        # Создаем горизонтальный layout для кнопок выбора файлов
+        files_layout = QtWidgets.QHBoxLayout()
         
-        # Создаем кнопку для генерации файла
+        # Левая часть - первый файл
+        left_layout = QtWidgets.QVBoxLayout()
+        self.select_file1_btn = QtWidgets.QPushButton('Выбрать файл 1')
+        self.select_file1_btn.setFixedSize(150, 40)
+        self.file1_label = QtWidgets.QLabel('Файл 1 не выбран')
+        self.file1_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.file1_label.setWordWrap(True)
+        self.file1_label.setStyleSheet("QLabel { background-color: #f0f0f0; padding: 5px; border: 1px solid #ccc; }")
+        left_layout.addWidget(self.select_file1_btn, 0, QtCore.Qt.AlignCenter)
+        left_layout.addWidget(self.file1_label)
+        
+        # Правая часть - второй файл
+        right_layout = QtWidgets.QVBoxLayout()
+        self.select_file2_btn = QtWidgets.QPushButton('Выбрать файл 2')
+        self.select_file2_btn.setFixedSize(150, 40)
+        self.file2_label = QtWidgets.QLabel('Файл 2 не выбран')
+        self.file2_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.file2_label.setWordWrap(True)
+        self.file2_label.setStyleSheet("QLabel { background-color: #f0f0f0; padding: 5px; border: 1px solid #ccc; }")
+        right_layout.addWidget(self.select_file2_btn, 0, QtCore.Qt.AlignCenter)
+        right_layout.addWidget(self.file2_label)
+        
+        # Добавляем левую и правую части в горизонтальный layout
+        files_layout.addLayout(left_layout)
+        files_layout.addLayout(right_layout)
+        
+        # Кнопка генерации файла
         self.generate_file_btn = QtWidgets.QPushButton('Сгенерировать файл')
-        self.generate_file_btn.setFixedSize(150, 40)
-        
-        # Создаем метку для отображения выбранных файлов
-        self.files_label = QtWidgets.QLabel('Файлы не выбраны')
-        self.files_label.setAlignment(QtCore.Qt.AlignCenter)
-        self.files_label.setWordWrap(True)
+        self.generate_file_btn.setFixedSize(200, 40)
         
         # Создаем компактный список для отображения сгенерированного файла
         self.generated_file_list = QtWidgets.QListWidget()
-        self.generated_file_list.setMaximumHeight(60)  # Уменьшаем высоту
-        self.generated_file_list.setFixedWidth(250)    # Устанавливаем ширину
+        self.generated_file_list.setMaximumHeight(60)
+        self.generated_file_list.setFixedWidth(250)
         
         # Создаем метку для сгенерированного файла
         generated_file_label = QtWidgets.QLabel('Сгенерированный файл:')
         generated_file_label.setAlignment(QtCore.Qt.AlignCenter)
         
-        # Добавляем виджеты в layout
-        layout.addWidget(self.select_files_btn, 0, QtCore.Qt.AlignCenter)
-        layout.addWidget(self.generate_file_btn, 0, QtCore.Qt.AlignCenter)
-        layout.addWidget(self.files_label)
+        # Добавляем все виджеты в основной layout
+        main_layout.addLayout(files_layout)
+        main_layout.addWidget(self.generate_file_btn, 0, QtCore.Qt.AlignCenter)
         
         # Горизонтальный layout для центрирования списка файлов
         file_list_layout = QtWidgets.QHBoxLayout()
@@ -43,15 +62,15 @@ class FileSelectionWindow(QtWidgets.QWidget):
         file_list_layout.addStretch()
         
         # Добавляем метку и центрированный список
-        layout.addWidget(generated_file_label)
-        layout.addLayout(file_list_layout)
+        main_layout.addWidget(generated_file_label)
+        main_layout.addLayout(file_list_layout)
         
         # Добавляем растягивающееся пространство
-        layout.addStretch()
+        main_layout.addStretch()
         
         # Устанавливаем layout для окна
-        self.setLayout(layout)
+        self.setLayout(main_layout)
         
         # Настраиваем окно
-        self.setWindowTitle('Выбор файлов')
-        self.setFixedSize(400, 350)  # Уменьшаем размер окна
+        self.setWindowTitle('Сравнение оценок')
+        self.setFixedSize(600, 400)
